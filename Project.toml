@@ -1,0 +1,7 @@
+name = "chaotic_dynamics"
+uuid = "df131322-261d-4b63-bd68-b841fef0ddd1"
+authors = ["Sameer Kashyap <sameera.s.kashyap@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
