@@ -1,6 +1,6 @@
 module LorenzODE
 
-export Lorenz, LorenzPlotSolution
+export LorenzSolution, LorenzPlotSolution, lorenz
 
 using DifferentialEquations
 using Plots
@@ -14,7 +14,7 @@ function lorenz!(du, u, p, t)
 end
 
 
-function Lorenz(u0, tspan, tsteps)
+function LorenzSolution(u0, tspan, tsteps)
     σ = 10.0
     ρ = 28.0
     β = 8 / 3
@@ -22,7 +22,7 @@ function Lorenz(u0, tspan, tsteps)
 
     prob = ODEProblem(lorenz!, u0, tspan, p)
     sol = solve(prob, Tsit5(), saveat=tsteps)
-    return sol
+    return sol, p
 end
 
 function LorenzPlotSolution(sol)
