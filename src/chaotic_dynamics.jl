@@ -1,5 +1,6 @@
-module chaotic_dynamics
+include("lorenz_ode.jl")
 
-greet() = print("Hello World!")
+using .LorenzODE
 
-end # module
+
+sol = LorenzODE.Lorenz()
