@@ -14,14 +14,14 @@ function lorenz!(du, u, p, t)
 end
 
 
-function Lorenz(u0, tspan)
+function Lorenz(u0, tspan, tsteps)
     σ = 10.0
     ρ = 28.0
     β = 8 / 3
     p = [σ, ρ, β]
 
     prob = ODEProblem(lorenz!, u0, tspan, p)
-    sol = solve(prob)
+    sol = solve(prob, Tsit5(), saveat=tsteps)
     return sol
 end
 
