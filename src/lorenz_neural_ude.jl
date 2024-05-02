@@ -1,7 +1,3 @@
-include("lorenz_ode.jl")
-using .LorenzODE
-
-
 module LorenzNeuralUDE
 
 export Intialize, Run
@@ -17,21 +13,22 @@ function InitializeNN(variables, weights, activation)
     return p, st, U
 end
 
-function lorenzUde!(du, U, u, p, t, p_true)
+function lorenzUde!(du, U, u, p, t, p_true, st)
     û = U(u, p, st)[1]
-    LorenzODE.lorenz!(du, u, p_true, t)
-    du .+= û
+    du[1] = p_true[1] * (u[2] - û[1])
+    du[2] = -u[2] + û[2]
+    du[3] = -p_true[3] * u[3] + û[3]
 end
 
 # Function to predict using the neural network
-function predict(θ, prob_nn, X=u0, T=tspan)
+function predict(θ, prob_nn, T=tspan)
     _prob = remake(prob_nn, p=θ)
     Array(solve(_prob, Vern7(), saveat=T))
 end
 
 # Loss function
 function loss(θ, prob_nn, tspan)
-    X̂ = predict(θ, prob_nn)
+    X̂ = predict(θ, prob_nn, tspan)
     X_true = Array(solve(prob, Vern7(), saveat=tspan))
     mean(abs2, X_true .- X̂)
 end
@@ -44,8 +41,8 @@ callback = function (p, l)
     return false
 end
 
-function Run(U, u0, p, p_true, tspan, optimization, maxiters)
-    nnDyanmics!(du, u, p, t) = lorenzUde!(du, U, u, p, t, p_true)
+function Run(U, u0, p, p_true, st_ude, tspan, optimization, maxiters)
+    nnDyanmics!(du, u, p, t) = lorenzUde!(du, U, u, p, t, p_true, st_ude)
     prob_nn = ODEProblem(nnDyanmics!, u0, tspan, p_true)
 
     adtype = Optimization.AutoZygote()

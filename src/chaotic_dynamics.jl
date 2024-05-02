@@ -43,5 +43,4 @@ weightsUde = 10
 p_ude, st_ude, U = Lorens = LorenzNeuralUDE.InitializeNN(equations, weightsUde, activation)
 optimizer = ADAM()
 maxiters = 500
-
-result_ude = LorenzNeuralUDE.Run(U, u0, p_ude, p_true, tspan, optimizer, maxiters)
+result_ude = LorenzNeuralUDE.Run(U, u0, p_ude, p_true, st_ude, tspan, optimizer, maxiters)
