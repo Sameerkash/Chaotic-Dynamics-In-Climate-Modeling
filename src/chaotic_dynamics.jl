@@ -1,13 +1,12 @@
 include("lorenz_ode.jl")
 include("lorenz_neural_ode.jl")
-include("lorenz_neural_ude.jl")
+include("lorenz_neural_ude_x.jl")
 
 using .LorenzODE
 using .LorenzNueralODE
-using .LorenzNeuralUDE
+using .LorenzNeuralUDEX
 
 using Plots, Optimization, OptimizationOptimJL, OptimizationOptimisers
-
 
 
 u0 = [1.0, 1.0, 1.0]
@@ -40,7 +39,10 @@ maxiters = 500
 
 weightsUde = 10
 
-p_ude, st_ude, U = Lorens = LorenzNeuralUDE.InitializeNN(equations, weightsUde, activation)
-optimizer = ADAM()
+# p_ude, st_ude, U  = LorenzNeuralUDE.InitializeNN(equations, weightsUde, activation)
+optimizer = Optimisers.Adam()
 maxiters = 500
-result_ude = LorenzNeuralUDE.Run(U, u0, p_ude, p_true, st_ude, tspan, optimizer, maxiters)
+# result_ude = LorenzNeuralUDE.Run(U, p_ude, p_true, st_ude, tspan, trueOdeData, optimizer, maxiters)
+
+
+LorenzNeuralUDEX.RunAndPlot()

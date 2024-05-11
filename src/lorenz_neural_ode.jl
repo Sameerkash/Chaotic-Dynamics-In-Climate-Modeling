@@ -1,10 +1,11 @@
+
+
 module LorenzNueralODE
 
 export InitializeNN, Run
 
 using ComponentArrays, Lux, DiffEqFlux, OrdinaryDiffEq, Optimization, OptimizationOptimJL,
     OptimizationOptimisers, Random, Plots
-
 
 function InitializeNN(variables, weights, activation, tspan, tsteps)
     rng = Random.default_rng()
