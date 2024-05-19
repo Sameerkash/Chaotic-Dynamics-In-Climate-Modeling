@@ -17,7 +17,7 @@ rng = StableRNG(1111)
 
 
 #### PART 2: GENERATING THE DATA 
-function lotka!(du, u, p, t)
+function lorenz!(du, u, p, t)
     σ, ρ, β = p
     du[1] = σ * (u[2] - u[1])
     du[2] = u[1] * (ρ - u[3]) - u[2]
@@ -35,7 +35,7 @@ datasize = 100
 tsteps = range(tspan[1], tspan[2]; length=datasize)
 
 
-prob = ODEProblem(lotka!, u0, tspan, p_)
+prob = ODEProblem(lorenz!, u0, tspan, p_)
 solution = solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=0.25)
 
 # Add noise in terms of the mean
@@ -44,19 +44,20 @@ t = solution.t
 
 x̄ = mean(X, dims=2)
 noise_magnitude = 5e-3
-Xₙ = X .+ (noise_magnitude * x̄) .* randn(rng, eltype(X), size(X))
+Xₙ = X
+# .+ (noise_magnitude * x̄) .* randn(rng, eltype(X), size(X))
 
 plot(solution, alpha=0.75, color=:black, label=["True Data" nothing])
 scatter!(t, transpose(Xₙ), color=:red, label=["Noisy Data" nothing])
 
-rbf(x) = exp.(-(x .^ 2))
+# rbf(x) = exp.(-(x .^ 2))
 
 #### PART 3: DEFINING THE NEURAL NETWORK WHICH WE WILL USE TO REPLACE THE INTERACTION TERM
 
 ## This is where we define the Neural Network!
 # Multilayer FeedForward
-const U = Lux.Chain(Lux.Dense(3, 5, rbf), Lux.Dense(5, 5, rbf), Lux.Dense(5, 5, rbf),
-    Lux.Dense(5, 3))
+const U = Lux.Chain(Lux.Dense(3, 200, tanh), Lux.Dense(200, 50, tanh),
+    Lux.Dense(50, 3))
 # Get the initial parameters and state variables of the model
 p, st = Lux.setup(rng, U)
 const _st = st
@@ -108,15 +109,15 @@ optprob = Optimization.OptimizationProblem(optf, ComponentVector{Float64}(p))
 #### PART 6: TRAINING THE NEURAL NETWORK
 
 function RunAndPlot()
-    res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=500)
+    res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=5000)
     println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
-    optprob2 = Optimization.OptimizationProblem(optf, res1.u)
-    res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1000)
+    # optprob2 = Optimization.OptimizationProblem(optf, res1.u)
+    # res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1000)
     # println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
     # Rename the best candidate
-    p_trained = res2.u
+    # p_trained = res2.u
 
     #### PART 7: VISUALIZATIONS
 
