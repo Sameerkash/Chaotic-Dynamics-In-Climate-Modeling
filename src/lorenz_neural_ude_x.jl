@@ -1,6 +1,5 @@
 ### PART 1: LOADING PACKAGES IN JULIA
 
-module LorenzNeuralUDEX
 # SciML Tools: We will load packages for Differential Equations and Optimization Libraries
 using OrdinaryDiffEq, ModelingToolkit, SciMLSensitivity, DataDrivenSparse
 using Optimization, OptimizationOptimisers, OptimizationOptimJL
@@ -37,7 +36,7 @@ tsteps = range(tspan[1], tspan[2]; length=datasize)
 
 prob = ODEProblem(lorenz!, u0, tspan, p_)
 solution = solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=0.25)
-
+ode_data = Array(solution)
 # Add noise in terms of the mean
 X = Array(solution)
 t = solution.t
@@ -47,8 +46,8 @@ noise_magnitude = 5e-3
 Xₙ = X
 # .+ (noise_magnitude * x̄) .* randn(rng, eltype(X), size(X))
 
-plot(solution, alpha=0.75, color=:black, label=["True Data" nothing])
-scatter!(t, transpose(Xₙ), color=:red, label=["Noisy Data" nothing])
+# plot(solution, alpha=0.75, color=:black, label=["True Data" nothing])
+# scatter!(t, transpose(Xₙ), color=:red, label=["Noisy Data" nothing])
 
 # rbf(x) = exp.(-(x .^ 2))
 
@@ -56,7 +55,7 @@ scatter!(t, transpose(Xₙ), color=:red, label=["Noisy Data" nothing])
 
 ## This is where we define the Neural Network!
 # Multilayer FeedForward
-const U = Lux.Chain(Lux.Dense(3, 200, tanh), Lux.Dense(200, 50, tanh),
+const U = Lux.Chain(Lux.Dense(3, 300, sigmoid), Lux.Dense(300, 50, sigmoid),
     Lux.Dense(50, 3))
 # Get the initial parameters and state variables of the model
 p, st = Lux.setup(rng, U)
@@ -107,51 +106,50 @@ optprob = Optimization.OptimizationProblem(optf, ComponentVector{Float64}(p))
 
 
 #### PART 6: TRAINING THE NEURAL NETWORK
+res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=5000)
+println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
-function RunAndPlot()
-    res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=5000)
-    println("Training loss after $(length(losses)) iterations: $(losses[end])")
+optprob2 = Optimization.OptimizationProblem(optf, res1.u)
+res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1000)
+println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
-    # optprob2 = Optimization.OptimizationProblem(optf, res1.u)
-    # res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1000)
-    # println("Final training loss after $(length(losses)) iterations: $(losses[end])")
+# Rename the best candidate
+p_trained = res2.u 
 
-    # Rename the best candidate
-    # p_trained = res2.u
-
-    #### PART 7: VISUALIZATIONS
-
-    # # Plot the losses
-    # pl_losses = plot(1:5000, losses[1:5000], yaxis=:log10, xaxis=:log10,
-    #     xlabel="Iterations", ylabel="Loss", label="ADAM", color=:blue)
-    # plot!(5001:length(losses), losses[5001:end], yaxis=:log10, xaxis=:log10,
-    #     xlabel="Iterations", ylabel="Loss", label="BFGS", color=:red)
+#### PART 7: VISUALIZATIONS
+plot!(ode_data', alpha=0.3, legend=false, label="True ODE Data")
+plot!(p_trained', label="Prediction")
 
 
-    # ## Analysis of the trained network
-    # # Plot the data and the approximation
-    # ts = first(solution.t):(mean(diff(solution.t))/2):last(solution.t)
-    # X̂ = predict(p_trained, Xₙ[:, 1], ts)
-    # # Trained on noisy data vs real solution
-    # pl_trajectory = plot(ts, transpose(X̂), xlabel="t", ylabel="x(t), y(t)", color=:red,
-    #     label=["UDE Approximation" nothing])
-    # scatter!(solution.t, transpose(Xₙ), color=:black, label=["Measurements" nothing])
 
-    # # Ideal unknown interactions of the predictor
-    # Ȳ = [-p_[2] * (X̂[1, :] .* X̂[2, :])'; p_[3] * (X̂[1, :] .* X̂[2, :])']
-    # # Neural network guess
-    # Ŷ = U(X̂, p_trained, st)[1]
-
-    # pl_reconstruction = plot(ts, transpose(Ŷ), xlabel="t", ylabel="U(x,y)", color=:red,
-    #     label=["UDE Approximation" nothing])
-    # plot!(ts, transpose(Ȳ), color=:black, label=["True Interaction" nothing])
+# # Plot the losses
+# pl_losses = plot(1:5000, losses[1:5000], yaxis=:log10, xaxis=:log10,
+#     xlabel="Iterations", ylabel="Loss", label="ADAM", color=:blue)
+# plot!(5001:length(losses), losses[5001:end], yaxis=:log10, xaxis=:log10,
+#     xlabel="Iterations", ylabel="Loss", label="BFGS", color=:red)
 
 
-    # pl_reconstruction_error = plot(ts, norm.(eachcol(Ȳ - Ŷ)), yaxis=:log, xlabel="t",
-    #     ylabel="L2-Error", label=nothing, color=:red)
-    # pl_missing = plot(pl_reconstruction, pl_reconstruction_error, layout=(2, 1))
+# ## Analysis of the trained network
+# # Plot the data and the approximation
+# ts = first(solution.t):(mean(diff(solution.t))/2):last(solution.t)
+# X̂ = predict(p_trained, Xₙ[:, 1], ts)
+# # Trained on noisy data vs real solution
+# pl_trajectory = plot(ts, transpose(X̂), xlabel="t", ylabel="x(t), y(t)", color=:red,
+#     label=["UDE Approximation" nothing])
+# scatter!(solution.t, transpose(Xₙ), color=:black, label=["Measurements" nothing])
 
-    # pl_overall = plot(pl_trajectory, pl_missing)
-end
+# # Ideal unknown interactions of the predictor
+# Ȳ = [-p_[2] * (X̂[1, :] .* X̂[2, :])'; p_[3] * (X̂[1, :] .* X̂[2, :])']
+# # Neural network guess
+# Ŷ = U(X̂, p_trained, st)[1]
 
-end
+# pl_reconstruction = plot(ts, transpose(Ŷ), xlabel="t", ylabel="U(x,y)", color=:red,
+#     label=["UDE Approximation" nothing])
+# plot!(ts, transpose(Ȳ), color=:black, label=["True Interaction" nothing])
+
+
+# pl_reconstruction_error = plot(ts, norm.(eachcol(Ȳ - Ŷ)), yaxis=:log, xlabel="t",
+#     ylabel="L2-Error", label=nothing, color=:red)
+# pl_missing = plot(pl_reconstruction, pl_reconstruction_error, layout=(2, 1))
+
+# pl_overall = plot(pl_trajectory, pl_missing)
