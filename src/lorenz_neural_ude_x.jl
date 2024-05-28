@@ -28,14 +28,18 @@ end
 ρ = 28.0
 β = 8 / 3
 p_ = [σ, ρ, β]
-u0 = [1.0, 1.0, 1.0]
-tspan = (0.0, 100.0)
-datasize = 100
-tsteps = range(tspan[1], tspan[2]; length=datasize)
+
+
+u0 = [1.0, 0.0, 0.0]
+# Range for training Data
+tspan = (0.0, 25)
+datasize = 25
+tsteps = range(tspan[1], tspan[2], length=datasize)
+
 
 
 prob = ODEProblem(lorenz!, u0, tspan, p_)
-solution = solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=0.25)
+solution = solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=tsteps)
 ode_data = Array(solution)
 # Add noise in terms of the mean
 X = Array(solution)
@@ -114,7 +118,7 @@ res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1
 println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
 # Rename the best candidate
-p_trained = res2.u 
+p_trained = predict(res2.u)
 
 #### PART 7: VISUALIZATIONS
 plot!(ode_data', alpha=0.3, legend=false, label="True ODE Data")
