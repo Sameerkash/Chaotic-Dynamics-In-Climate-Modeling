@@ -32,8 +32,8 @@ p_ = [σ, ρ, β]
 
 u0 = [1.0, 0.0, 0.0]
 # Range for training Data
-tspan = (0.0, 25)
-datasize = 25
+tspan = (0.0, 8.0)
+datasize = 8
 tsteps = range(tspan[1], tspan[2], length=datasize)
 
 
@@ -59,11 +59,10 @@ Xₙ = X
 
 ## This is where we define the Neural Network!
 # Multilayer FeedForward
-const U = Lux.Chain(Lux.Dense(3, 300, sigmoid), Lux.Dense(300, 50, sigmoid),
-    Lux.Dense(50, 3))
+U = Lux.Chain(Lux.Dense(3, 25, sigmoid), Lux.Dense(25, 3))
 # Get the initial parameters and state variables of the model
 p, st = Lux.setup(rng, U)
-const _st = st
+_st = st
 
 #### PART 4: DEFINING THE UNIVERSAL DIFFERENTIAL EQUATION
 
@@ -71,8 +70,8 @@ const _st = st
 function ude_dynamics!(du, u, p, t, p_true)
     û = U(u, p, st)[1]
     du[1] = p_true[1] * (u[2] - û[1])
-    du[2] = -u[2] + û[2]
-    du[3] = -p_true[3] * u[3] + û[3]
+    du[2] = -u[2] + 0.1*û[2]
+    du[3] = -p_true[3] * u[3] +  10*û[3]
 end
 
 # Closure with the known parameter
@@ -108,52 +107,43 @@ adtype = Optimization.AutoZygote()
 optf = Optimization.OptimizationFunction((x, p) -> loss(x), adtype)
 optprob = Optimization.OptimizationProblem(optf, ComponentVector{Float64}(p))
 
-
 #### PART 6: TRAINING THE NEURAL NETWORK
-res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=5000)
+res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=90000)
 println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
 optprob2 = Optimization.OptimizationProblem(optf, res1.u)
-res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=1000)
+res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=5000)
 println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
 # Rename the best candidate
 p_trained = predict(res2.u)
 
 #### PART 7: VISUALIZATIONS
-plot!(ode_data', alpha=0.3, legend=false, label="True ODE Data")
-plot!(p_trained', label="Prediction")
+plot(ode_data', label="True ODE Data", color=:red)
+plot!(p_trained', label="Prediction", color=:blue)
 
 
+extended_tspan = (0.0, 100.0)
+extended_datasize = 100  # Increase the number of steps for better resolution
+extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
-# # Plot the losses
-# pl_losses = plot(1:5000, losses[1:5000], yaxis=:log10, xaxis=:log10,
-#     xlabel="Iterations", ylabel="Loss", label="ADAM", color=:blue)
-# plot!(5001:length(losses), losses[5001:end], yaxis=:log10, xaxis=:log10,
-#     xlabel="Iterations", ylabel="Loss", label="BFGS", color=:red)
+# Define a new ODE problem for the extended timespan
+extended_prob_nn = ODEProblem(nn_dynamics!, Xₙ[:, 1], extended_tspan, res2.u)
 
+# Define the extended prediction function
+function extended_predict(θ, X=Xₙ[:, 1], T=extended_tsteps)
+    _prob = remake(extended_prob_nn, u0=X, tspan=(T[1], T[end]), p=θ)
+    Array(solve(_prob, Vern7(), saveat=T,
+        abstol=1e-6, reltol=1e-6,
+        sensealg=QuadratureAdjoint(autojacvec=ReverseDiffVJP(true))))
+end
 
-# ## Analysis of the trained network
-# # Plot the data and the approximation
-# ts = first(solution.t):(mean(diff(solution.t))/2):last(solution.t)
-# X̂ = predict(p_trained, Xₙ[:, 1], ts)
-# # Trained on noisy data vs real solution
-# pl_trajectory = plot(ts, transpose(X̂), xlabel="t", ylabel="x(t), y(t)", color=:red,
-#     label=["UDE Approximation" nothing])
-# scatter!(solution.t, transpose(Xₙ), color=:black, label=["Measurements" nothing])
-
-# # Ideal unknown interactions of the predictor
-# Ȳ = [-p_[2] * (X̂[1, :] .* X̂[2, :])'; p_[3] * (X̂[1, :] .* X̂[2, :])']
-# # Neural network guess
-# Ŷ = U(X̂, p_trained, st)[1]
-
-# pl_reconstruction = plot(ts, transpose(Ŷ), xlabel="t", ylabel="U(x,y)", color=:red,
-#     label=["UDE Approximation" nothing])
-# plot!(ts, transpose(Ȳ), color=:black, label=["True Interaction" nothing])
+# Use the trained parameters to make a prediction over the extended timespan
+extended_prediction = extended_predict(res2.u, Xₙ[:, 1], extended_tsteps)
 
 
-# pl_reconstruction_error = plot(ts, norm.(eachcol(Ȳ - Ŷ)), yaxis=:log, xlabel="t",
-#     ylabel="L2-Error", label=nothing, color=:red)
-# pl_missing = plot(pl_reconstruction, pl_reconstruction_error, layout=(2, 1))
+extendedProb = ODEProblem(lorenz!, u0, extended_tspan, p_)
+extendedSolution = Array(solve(extendedProb, Vern7(), abstol=1e-12, reltol=1e-12, saveat=extended_tsteps))
 
-# pl_overall = plot(pl_trajectory, pl_missing)
+plot(extendedSolution', label="True ODE Data", color=:red)
+plot(extended_prediction', label="Extended Prediction", color=:blue)
