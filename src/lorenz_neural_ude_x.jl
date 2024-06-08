@@ -84,16 +84,18 @@ optprob2 = Optimization.OptimizationProblem(optf, res1.u)
 res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=5000)
 println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
-p_trained = res2.u
+p_trained = res2.minimizer
 
 # Extend the timespan for prediction
 extended_tspan = (0.0, 100.0)
 extended_datasize = 1000
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
+
+prob_node2 = ODEProblem(nn_dynamics!, u0, extended_tspan, res2.u)
 # Define the extended prediction function
 function extended_predict(θ, X=Xₙ[:, 1], T=extended_tsteps)
-    _prob = remake(prob_nn, u0=X, tspan=(T[1], T[end]), p=θ)
+    _prob = remake(prob_node2, u0=X, tspan=(T[1], T[end]), p=θ)
     Array(solve(_prob, Vern7(), saveat=T,
         abstol=1e-6, reltol=1e-6,
         sensealg=QuadratureAdjoint(autojacvec=ReverseDiffVJP(true))))
@@ -102,10 +104,9 @@ end
 # Use the trained parameters to make a prediction over the extended timespan
 extended_prediction = extended_predict(p_trained, Xₙ[:, 1], extended_tsteps)
 
-
 extended_ode_prob = ODEProblem(lorenz!, u0, tspan, p_trained)
 extended_solution = Array(solve(prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=extended_tsteps))
 
 # Plot the original ODE data and the extended prediction
 plot(extended_solution', label="True ODE Data", color=:red)
-plot!(extended_prediction', label="Extended Prediction", color=:blue)
+plot(extended_prediction', label="Extended Prediction", color=:blue)
