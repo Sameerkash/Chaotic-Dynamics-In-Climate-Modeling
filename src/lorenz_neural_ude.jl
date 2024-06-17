@@ -86,13 +86,6 @@ println("Final training loss after $(length(losses)) iterations: $(losses[end])"
 
 p_trained = res2.minimizer
 
-# # Extend the timespan for prediction
-# extended_tspan = (0.0, 100.0)
-# extended_datasize = 1000
-# extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
-
-
-
 # Extend the timespan for prediction
 extended_tspan = (0.0, 12.0)
 extended_datasize = 12
@@ -117,11 +110,6 @@ extended_ode_prob = ODEProblem(lorenz!, u0, extended_tspan, p_)
 
 # Solve the true Lorenz system over the extended timespan
 extended_solution = Array(solve(extended_ode_prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=extended_tsteps))
-
-# # Plot the original ODE data and the extended prediction
-# plot(extended_solution', label="True ODE Data", color=:red)
-# plot(extended_prediction', label="Extended Prediction", color=:blue)
-
 
 # Plot the true ODE data with dots and the extended prediction with lines
 # Different colors for u1, u2, u3, with legends and axis titles
