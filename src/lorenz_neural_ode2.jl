@@ -33,8 +33,9 @@ ode_data = Array(solve(prob, Tsit5(), u0=u0, p=p0, saveat=t))
 # Definition of Neural Network with activation function and layers.
 activation = sigmoid
 dudt2 = Lux.Chain(
-    Lux.Dense(3, 100, activation),
-    Lux.Dense(100, 3))
+    Lux.Dense(3, 50, activation),
+    Lux.Dense(50, 50, activation),
+    Lux.Dense(50, 3))
 p, st = Lux.setup(rng, dudt2)
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat=t)
 
@@ -54,21 +55,35 @@ end
 
 # Do not plot by default for the documentation
 # Users should change doplot=true to see the plots callbacks
-losses = Float32[]
+lossesRelu = Float32[]
+lossesTanh = Float32[]
+lossesSigmoid = Float32[]
 
 # Call back to print iteration
 callback5 = function (p, l, pred; doplot=true)
-    push!(losses, l)
-    if length(losses) % 50 == 0
-        println("Current loss after $(length(losses)) iterations: $(losses[end])")
+    if (activation == relu)
+        push!(lossesRelu, l)
+        if length(lossesRelu) % 50 == 0
+            println("Current loss for relu after $(length(lossesRelu)) iterations: $(lossesRelu[end])")
+        end
+    elseif (activation == tanh)
+        push!(lossesTanh, l)
+        if length(lossesTanh) % 50 == 0
+            println("Current loss for tanh after $(length(lossesTanh)) iterations: $(lossesTanh[end])")
+        end
+    else
+        push!(lossesSigmoid, l)
+        if length(lossesSigmoid) % 50 == 0
+            println("Current loss for sigmoid after $(length(lossesSigmoid)) iterations: $(lossesSigmoid[end])")
+        end
     end
 
-    # plot current prediction against data
-    if doplot && length(losses) % 1000 == 0
-        plt = scatter(t, ode_data[1, :], label="data")
-        scatter!(plt, t, pred[1, :], label="prediction")
-        display(plot(plt))
-    end
+    # # plot current prediction against data
+    # if doplot && length(losses) % 1000 == 0
+    #     plt = scatter(t, ode_data[1, :], label="data")
+    #     scatter!(plt, t, pred[1, :], label="prediction")
+    #     display(plot(plt))
+    # end
     return false
 end
 
@@ -82,7 +97,8 @@ optf = Optimization.OptimizationFunction((x, p) -> loss_neuralode(x), adtype)
 optprob = Optimization.OptimizationProblem(optf, pinit)
 
 # Using Adam Optimizer
-result_neuralode = Optimization.solve(optprob, ADAM(0.01), callback=callback5, maxiters=50000)
+result_neuralode = Optimization.solve(optprob, ADAM(0.01), callback=callback5, maxiters=40000)
+
 
 optprob2 = remake(optprob, u0=result_neuralode.u)
 result_neuralode2 = Optimization.solve(optprob2,
@@ -91,13 +107,20 @@ result_neuralode2 = Optimization.solve(optprob2,
     allow_f_increases=false)
 data_pred = predict_neuralode(result_neuralode2.u)
 
+plot(title="Losses Over Time", xlabel="Time", ylabel="Loss", ylims=(0, 10000), xlims=(0, 10))
+# Add the data series
+plot!(t, lossesRelu, lw=1, legend=false, seriestype=:line, label="relu", color=:red)  # Uncomment and provide data if needed
+plot!(t, lossesTanh, lw=1, legend=false, seriestype=:line, label="tanh", color=:blue)
+plot!(t, lossesSigmoid, lw=1, legend=false, seriestype=:line, label="sigmoid", color=:green)
+plot!(legend=:bottomleft, grid=true)
 
-# plot losses
-plot(t, losses, title="Losses Over Time", xlabel="Time", ylabel="Loss", lw=1, legend=false, seriestype=:line)
+
+# # Plot true soltion against Prediction
+# plot!(ode_data', alpha=0.3, legend=false, label="True ODE Data")
+# plot!(data_pred', label="Prediction")
 
 # Plot u1
 plot(tsteps, ode_data[1, :], seriestype=:scatter, marker=:circle, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE")
-
 plot!(tsteps, data_pred[1, :], seriestype=:line, label="Predicted u1", color=:red)
 
 # Plot u2

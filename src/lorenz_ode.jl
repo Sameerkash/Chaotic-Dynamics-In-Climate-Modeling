@@ -21,12 +21,14 @@ function LorenzSolution(u0, tspan, tsteps)
     p = [σ, ρ, β]
 
     prob = ODEProblem(lorenz!, u0, tspan, p)
-    sol = solve(prob, Tsit5(), saveat=tsteps)
+    sol = solve(prob, Tsit5())
     return sol, p
 end
 
 function LorenzPlotSolution(sol)
-    plot(sol, vars=(1, 2, 3), xlabel="x", ylabel="y", zlabel="z", title="Lorenz Attractor")
+    # plot1= plot(sol, vars=(1, 2, 3), xlabel="x", ylabel="y", zlabel="z", title="Lorenz Attractor")
+    plot2 = plot(sol, label=["x" "y" "z"])
+    plot(plot2)
 end
 
 end

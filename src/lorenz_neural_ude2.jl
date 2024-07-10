@@ -35,8 +35,10 @@ x̄ = mean(X, dims=2)
 noise_magnitude = 5e-3
 Xₙ = X
 
+shallow = false
+
 # Define the neural network
-U = Lux.Chain(Lux.Dense(3, 25, sigmoid), Lux.Dense(25, 3))
+U = Lux.Chain(Lux.Dense(3, 50, sigmoid), Lux.Dense(50,100, sigmoid), Lux.Dense(100, 3))
 p, st = Lux.setup(rng, U)
 _st = st
 
@@ -63,12 +65,21 @@ function loss(θ)
     mean(abs2, Xₙ .- X̂)
 end
 
-losses = Float64[]
+shallowLosses = Float64[]
+deepLosses = Float64[]
+
 
 callback = function (p, l)
-    push!(losses, l)
-    if length(losses) % 50 == 0
-        println("Current loss after $(length(losses)) iterations: $(losses[end])")
+    if (shallow)
+        push!(shallowLosses, l)
+        if length(shallowLosses) % 50 == 0
+            println("Current shallowloss after $(length(shallowLosses)) iterations: $(shallowLosses[end])")
+        end
+    else
+        push!(deepLosses, l)
+        if length(deepLosses) % 50 == 0
+            println("Current deepLossesafter $(length(deepLosses)) iterations: $(deepLosses[end])")
+        end
     end
     return false
 end
@@ -78,17 +89,26 @@ optf = Optimization.OptimizationFunction((x, p) -> loss(x), adtype)
 optprob = Optimization.OptimizationProblem(optf, ComponentVector{Float64}(p))
 
 res1 = Optimization.solve(optprob, ADAM(), callback=callback, maxiters=50000)
-println("Training loss after $(length(losses)) iterations: $(losses[end])")
+# println("Training loss after $(length(losses)) iterations: $(losses[end])")
 
 optprob2 = Optimization.OptimizationProblem(optf, res1.minimizer)
 res2 = Optimization.solve(optprob2, Optim.LBFGS(), callback=callback, maxiters=5000)
-println("Final training loss after $(length(losses)) iterations: $(losses[end])")
+# println("Final training loss after $(length(losses)) iterations: $(losses[end])")
 
 p_trained = res2.minimizer
 
+
+epochs = 0:4999
+plot(title="Losses Over Epoch", xlabel="Epoch", ylabel="Loss", ylims=(-10, 100), xlims=(0, 5000))
+# Add the data series
+plot!(epochs, shallowLosses, lw=1, legend=false, seriestype=:line, label="Shallow Network", color=:red)  # Uncomment and provide data if needed
+plot!(epochs, deepLosses, lw=1, legend=false, seriestype=:line, label="Deep Network", color=:blue)
+plot!(legend=:topright, grid=true)
+
+
 # Extend the timespan for prediction
-extended_tspan = (0.0, 12.0)
-extended_datasize = 12
+extended_tspan = (0.0, 20.0)
+extended_datasize = 20
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
 # Define the extended ODE problem with the trained parameters
@@ -97,12 +117,10 @@ prob_node2 = ODEProblem(nn_dynamics!, u0, extended_tspan, p_trained)
 # Define the extended prediction function
 function extended_predict(θ, X=u0, T=extended_tsteps)
     _prob = remake(prob_node2, u0=X, tspan=(T[1], T[end]), p=θ)
-    Array(solve(_prob, Vern7(), saveat=T, 
+    Array(solve(_prob, Vern7(), saveat=T,
         abstol=1e-6, reltol=1e-6,
         sensealg=QuadratureAdjoint(autojacvec=ReverseDiffVJP(true))))
 end
-
-plot(tsteps, losses, title="Losses Over Time", xlabel="Time", ylabel="Loss", lw=1, legend=false, seriestype=:line)
 
 # Use the trained parameters to make a prediction over the extended timespan
 extended_prediction = extended_predict(p_trained, u0, extended_tsteps)
