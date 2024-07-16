@@ -34,6 +34,18 @@ ode_data = Array(solve(prob, Tsit5(), u0=u0, p=p0, saveat=t))
 noise_level = 0.1
 noisy_ode_data = ode_data .+ noise_level * randn(size(ode_data))
 
+# Define moving average function
+function moving_average(data, window_size)
+    return [mean(data[max(1, i - window_size + 1):i]) for i in 1:length(data)]
+end
+
+# Calculate moving averages
+window_size = 3
+ma_u1 = moving_average(noisy_ode_data[1, :], window_size)
+ma_u2 = moving_average(noisy_ode_data[2, :], window_size)
+ma_u3 = moving_average(noisy_ode_data[3, :], window_size)
+
+
 # Definition of Neural Network with activation function and layers.
 activation = sigmoid
 dudt2 = Lux.Chain(
@@ -102,25 +114,25 @@ bottom_margin = 15px
 plot(t, losses_original, title="Losses Over Time (Original vs Noisy)", xlabel="Time", ylabel="Loss", lw=1, legend=false, seriestype=:line, label="Original", )
 plot!(t, losses_noisy, lw=1, seriestype=:line, label="Noisy")
 
+plot()
 # Plot u1
 plot(t, ode_data[1, :], seriestype=:scatter, marker=:circle, label="True u1 (Original)", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE (Original vs Noisy)", size=plot_size, left_margin=left_margin, right_margin=right_margin,  bottom_margin=bottom_margin, top_margin=top_margin)
 plot!(t, data_pred_original[1, :], seriestype=:line, label="Predicted u1 (Original)", color=:red)
 plot!(t, noisy_ode_data[1, :], seriestype=:scatter, marker=:x, label="True u1 (Noisy)", color=:blue, alpha=0.3)
 plot!(t, data_pred_noisy[1, :], seriestype=:line, label="Predicted u1 (Noisy)", color=:blue)
+plot!(t, ma_u1, seriestype=:line, label="Moving Avg u1 (Noisy)", color=:cyan, linestyle=:dash)
 
 # Plot u2
 plot!(t, ode_data[2, :], seriestype=:scatter, marker=:circle, label="True u2 (Original)", color=:green, alpha=0.3)
 plot!(t, data_pred_original[2, :], seriestype=:line, label="Predicted u2 (Original)", color=:green)
 plot!(t, noisy_ode_data[2, :], seriestype=:scatter, marker=:x, label="True u2 (Noisy)", color=:purple, alpha=0.3)
 plot!(t, data_pred_noisy[2, :], seriestype=:line, label="Predicted u2 (Noisy)", color=:purple)
-
+plot!(t, ma_u2, seriestype=:line, label="Moving Avg u1 (Noisy)", color=:cyan, linestyle=:dash)
 # Plot u3
 plot!(t, ode_data[3, :], seriestype=:scatter, marker=:circle, label="True u3 (Original)", color=:orange, alpha=0.3)
 plot!(t, data_pred_original[3, :], seriestype=:line, label="Predicted u3 (Original)", color=:orange)
 plot!(t, noisy_ode_data[3, :], seriestype=:scatter, marker=:x, label="True u3 (Noisy)", color=:brown, alpha=0.3)
 plot!(t, data_pred_noisy[3, :], seriestype=:line, label="Predicted u3 (Noisy)", color=:brown)
-
-
-
+plot!(t, ma_u3, seriestype=:line, label="Moving Avg u1 (Noisy)", color=:cyan, linestyle=:dash)
 # Add legend and grid
 plot!(legend=:outertopright, grid=true)
