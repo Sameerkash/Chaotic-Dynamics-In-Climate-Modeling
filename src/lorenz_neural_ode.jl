@@ -1,9 +1,10 @@
 using ComponentArrays, Lux, DiffEqFlux, OrdinaryDiffEq, Optimization, OptimizationOptimJL,
     OptimizationOptimisers, Random, Plots, DifferentialEquations, Statistics
-rng = Random.default_rng()
-
-
+using Plots.PlotMeasures
+gr()
 # Intial Conditions u0 and constants p0
+
+rng = Random.default_rng()
 const S0 = 1.0
 u0 = [S0 * 1, 0.0, 0.0]
 p0 = Float64[
@@ -92,28 +93,86 @@ result_neuralode2 = Optimization.solve(optprob2,
 data_pred = predict_neuralode(result_neuralode2.u)
 
 
+
+plot_size = (1200, 600)# Width x Height in pixels
+left_margin = 15px
+right_margin = 15px
+top_margin = 15px
+bottom_margin = 15px
+
 # plot losses
-plot(t, losses, title="Losses Over Time", xlabel="Time", ylabel="Loss", lw=1, legend=false, seriestype=:line)
+plot(t, losses, title="Losses Over Time", xlabel="Time", ylabel="Loss", lw=3, legend=false, seriestype=:line, size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 
-# Plot u1
-plot(tsteps, ode_data[1, :], seriestype=:scatter, marker=:circle, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE")
 
-plot!(tsteps, data_pred[1, :], seriestype=:line, label="Predicted u1", color=:red)
+# plot()
 
-# Plot u2
-plot!(tsteps, ode_data[2, :], seriestype=:scatter, marker=:circle, label="True u2", color=:green, alpha=0.3)
-plot!(tsteps, data_pred[2, :], seriestype=:line, label="Predicted u2", color=:green)
+# # Plot u1
+# plot!(t, ode_data[1, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE", size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 
-# Plot u3
-plot!(tsteps, ode_data[3, :], seriestype=:scatter, marker=:circle, label="True u3", color=:blue, alpha=0.3)
-plot!(tsteps, data_pred[3, :], seriestype=:line, label="Predicted u3", color=:blue)
 
-# Add legend and grid
-plot!(legend=:topleft, grid=true)
+# plot!(t, data_pred[1, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u1", color=:red)
 
+# # Plot u2
+# plot!(t, ode_data[2, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u2", color=:green, alpha=0.3)
+# plot!(t, data_pred[2, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u2", color=:green)
+
+# # Plot u3
+# plot!(t, ode_data[3, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u3", color=:blue, alpha=0.3)
+# plot!(t, data_pred[3, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u3", color=:blue)
+
+# # Add legend and grid
+# plot!(legend=:outertopright, grid=true, legendfontsize=14)
+
+
+# # Extend the timespan for prediction
+# extended_tspan = (0.0, 15.0)
+# extended_datasize = 10
+# extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
+
+# # Define the extended ODE problem with the trained parameters
+# prob_neuralode_extended = NeuralODE(dudt2, extended_tspan, Tsit5(), saveat=extended_tsteps)
+
+# # Use the trained parameters to make a prediction over the extended timespan
+# extended_prediction = predict_neuralode(result_neuralode2.u)
+
+# # Define the extended ODE problem for the true Lorenz system
+# extended_ode_prob = ODEProblem(Chaos!, u0, extended_tspan, p0)
+
+# # Solve the true Lorenz system over the extended timespan
+# extended_solution = Array(solve(extended_ode_prob, Tsit5(), saveat=extended_tsteps))
+
+# plot()
+
+# # Plot the true ODE data and the extended prediction
+# plot(extended_tsteps, extended_solution[1, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE Forecast", size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
+# plot!(extended_tsteps, extended_prediction[1, :], lw=3, markersize=6.0, seriestype=:line, linestyle=:dash, label="Predicted u1", color=:red)
+
+# plot!(extended_tsteps, extended_solution[2, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u2", color=:green)
+# plot!(extended_tsteps, extended_prediction[2, :], lw=3, markersize=6.0, seriestype=:line, linestyle=:dash, label="Predicted u2", color=:green)
+
+# plot!(extended_tsteps, extended_solution[3, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u3", color=:blue)
+# plot!(extended_tsteps, extended_prediction[3, :], lw=3, markersize=6.0, seriestype=:line, linestyle=:dash, label="Predicted u3", color=:blue)
+
+# # Add legend and grid
+# plot!(legend=:outertopright, grid=true, legendfontsize=14)
+
+plot()
+plot!(t, ode_data[1, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE Forecast", size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
+plot!(t, data_pred[1, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u1", color=:red)
+
+# Plot u2 - original data
+plot!(t, ode_data[2, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u2", color=:green, alpha=0.3)
+plot!(t, data_pred[2, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u2", color=:green)
+
+# Plot u3 - original data
+plot!(t, ode_data[3, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u3", color=:blue, alpha=0.3)
+plot!(t, data_pred[3, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u3", color=:blue)
+
+# Add legend and grid for the original data plot
+plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 # Extend the timespan for prediction
-extended_tspan = (0.0, 15.0)
+extended_tspan = (t[end], 15.0)  # Start from the end of t
 extended_datasize = 10
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
@@ -129,15 +188,22 @@ extended_ode_prob = ODEProblem(Chaos!, u0, extended_tspan, p0)
 # Solve the true Lorenz system over the extended timespan
 extended_solution = Array(solve(extended_ode_prob, Tsit5(), saveat=extended_tsteps))
 
+# Combine data_pred and extended_prediction for the plot
+combined_pred_u1 = vcat(data_pred[1, :], extended_prediction[1, 2:end])
+combined_pred_u2 = vcat(data_pred[2, :], extended_prediction[2, 2:end])
+combined_pred_u3 = vcat(data_pred[3, :], extended_prediction[3, 2:end])
+
+combined_tsteps = vcat(t, extended_tsteps[2:end])
+
+# Plot the combined predictions
+plot!(combined_tsteps, combined_pred_u1, seriestype=:line, linestyle=:dash, lw=2, label="Forecast u1", color=:red)
+plot!(combined_tsteps, combined_pred_u2, seriestype=:line, linestyle=:dash, lw=2, label="Forecast u2", color=:green)
+plot!(combined_tsteps, combined_pred_u3, seriestype=:line, linestyle=:dash, lw=2, label="Forecast u3", color=:blue)
+
 # Plot the true ODE data and the extended prediction
-plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE Forecast")
-plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, label="Predicted u1", color=:red)
+plot!(extended_tsteps, extended_solution[1, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u1 (Extended)", color=:red)
+plot!(extended_tsteps, extended_solution[2, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u2 (Extended)", color=:green)
+plot!(extended_tsteps, extended_solution[3, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label="True u3 (Extended)", color=:blue)
 
-plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, label="True u2", color=:green)
-plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, label="Predicted u2", color=:green)
-
-plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, label="True u3", color=:blue)
-plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, label="Predicted u3", color=:blue)
-
-# Add legend and grid
-plot!(legend=:topleft, grid=true)
+# Add legend and grid for the combined plot
+plot!(legend=:outertopright, grid=true, legendfontsize=10)

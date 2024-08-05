@@ -10,16 +10,16 @@ rng = StableRNG(1111)
 
 # Define the Lorenz system
 function lorenz!(du, u, p, t)
-    σ, ρ, β = p
-    du[1] = σ * (u[2] - u[1])
+    sigma, ρ, β = p
+    du[1] = sigma * (u[2] - u[1])
     du[2] = u[1] * (ρ - u[3]) - u[2]
     du[3] = u[1] * u[2] - β * u[3]
 end
 
-σ = 10.0
+sigma = 10.0
 ρ = 28.0
 β = 8 / 3
-p_ = [σ, ρ, β]
+p_ = [sigma, ρ, β]
 
 u0 = [1.0, 0.0, 0.0]
 tspan = (0.0, 8.0)
@@ -162,18 +162,18 @@ bottom_margin = 15px
 
 plot()
 # Plot u1
-plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, markersize = 5.0, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast (Original vs Noisy)", size=plot_size, left_margin=left_margin, right_margin=right_margin,  bottom_margin=bottom_margin, top_margin=top_margin)
-plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, label="Predicted u1 (Original)", color=:red)
-plot!(extended_tsteps, extended_prediction_noisy[1, :], seriestype=:line, label="Predicted u1 (Noisy)", color=:red, linestyle=:dash)
+plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:diamond, markersize = 10.0, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast (Original vs Noisy)", size=plot_size, left_margin=left_margin, right_margin=right_margin,  bottom_margin=bottom_margin, top_margin=top_margin)
+# plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, lw=2, label="Predicted u1 (Original)", color=:red)
+plot!(extended_tsteps, extended_prediction_noisy[1, :], seriestype=:line, lw=2, label="Predicted u1 (Noisy)", color=:red, linestyle=:dash)
 
 # Plot u2
-plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, markersize = 5.0,  label="True u2", color=:green)
-plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, label="Predicted u2 (Original)", color=:green)
-plot!(extended_tsteps, extended_prediction_noisy[2, :], seriestype=:line, linestyle=:dash, label="Predicted u1 (Noisy)")
+plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:diamond, markersize = 10.0,  label="True u2", color=:green)
+# plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, lw=2, label="Predicted u2 (Original)", color=:green)
+plot!(extended_tsteps, extended_prediction_noisy[2, :], seriestype=:line, lw=2, linestyle=:dash, label="Predicted u2 (Noisy)")
 
 # Plot u3;
-plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, markersize = 5.0, label="True u3", color=:blue)
-plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, label="Predicted u3 (Oridinal)", color=:blue)
-plot!(extended_tsteps, extended_prediction_noisy[3, :], seriestype=:line, linestyle=:dash, label="Predicted u1 (Noisy)")
+plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:diamond, markersize = 10.0, label="True u3", color=:blue)
+# plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, lw=2, label="Predicted u3 (Oridinal)", color=:blue)
+plot!(extended_tsteps, extended_prediction_noisy[3, :], seriestype=:line, lw=2, linestyle=:dash, label="Predicted u3 (Noisy)")
 
-plot!(legend=:outertopright, grid=true)
+plot!(legend=:outertopright, grid=true, legendfontsize=14)

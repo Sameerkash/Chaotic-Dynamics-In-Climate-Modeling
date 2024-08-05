@@ -2,7 +2,8 @@ using ComponentArrays, Lux, DiffEqFlux, OrdinaryDiffEq, Optimization, Optimizati
     OptimizationOptimisers, Random, Plots, DifferentialEquations, Statistics
 rng = Random.default_rng()
 
-
+using Plots.PlotMeasures
+gr()
 # Intial Conditions u0 and constants p0
 const S0 = 1.0
 u0 = [S0 * 1, 0.0, 0.0]
@@ -31,11 +32,11 @@ prob = ODEProblem(Chaos!, u0, tspan, p0)
 ode_data = Array(solve(prob, Tsit5(), u0=u0, p=p0, saveat=t))
 
 # Definition of Neural Network with activation function and layers.
-activation = sigmoid
+activation = relu
 dudt2 = Lux.Chain(
-    Lux.Dense(3, 50, activation),
-    Lux.Dense(50, 50, activation),
-    Lux.Dense(50, 3))
+    Lux.Dense(3, 25, activation),
+    Lux.Dense(25, 25, activation),
+    Lux.Dense(25, 3))
 p, st = Lux.setup(rng, dudt2)
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat=t)
 
@@ -97,7 +98,7 @@ optf = Optimization.OptimizationFunction((x, p) -> loss_neuralode(x), adtype)
 optprob = Optimization.OptimizationProblem(optf, pinit)
 
 # Using Adam Optimizer
-result_neuralode = Optimization.solve(optprob, ADAM(0.01), callback=callback5, maxiters=40000)
+result_neuralode = Optimization.solve(optprob, ADAM(0.01), callback=callback5, maxiters=20000)
 
 
 optprob2 = remake(optprob, u0=result_neuralode.u)
@@ -107,12 +108,21 @@ result_neuralode2 = Optimization.solve(optprob2,
     allow_f_increases=false)
 data_pred = predict_neuralode(result_neuralode2.u)
 
-plot(title="Losses Over Time", xlabel="Time", ylabel="Loss", ylims=(0, 10000), xlims=(0, 10))
+
+plot_size = (1200, 600)# Width x Height in pixels
+left_margin = 15px
+right_margin = 15px
+top_margin = 15px
+bottom_margin = 15px
+
+plot()
+
+plot(title="Losses Over Time", xlabel="Time", ylabel="Loss", ylims=(0, 8000), xlims=(0, 10), size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 # Add the data series
-plot!(t, lossesRelu, lw=1, legend=false, seriestype=:line, label="relu", color=:red)  # Uncomment and provide data if needed
-plot!(t, lossesTanh, lw=1, legend=false, seriestype=:line, label="tanh", color=:blue)
-plot!(t, lossesSigmoid, lw=1, legend=false, seriestype=:line, label="sigmoid", color=:green)
-plot!(legend=:bottomleft, grid=true)
+plot!(t, lossesRelu, lw=2, legend=false, seriestype=:line, label="relu", color=:red)  # Uncomment and provide data if needed
+plot!(t, lossesTanh, lw=2, legend=false, seriestype=:line,label="tanh", color=:blue)
+plot!(t, lossesSigmoid, lw=2, legend=false, seriestype=:line, label="sigmoid", color=:green)
+plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 
 # # Plot true soltion against Prediction

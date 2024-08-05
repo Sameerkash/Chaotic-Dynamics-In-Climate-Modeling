@@ -2,6 +2,7 @@ using OrdinaryDiffEq, ModelingToolkit, SciMLSensitivity, DataDrivenSparse
 using Optimization, OptimizationOptimisers, OptimizationOptimJL
 using LinearAlgebra, Statistics
 using ComponentArrays, Lux, Zygote, Plots, StableRNGs
+using Plots.PlotMeasures
 gr()
 
 # Set a random seed for reproducible behaviour
@@ -9,16 +10,16 @@ rng = StableRNG(1111)
 
 # Define the Lorenz system
 function lorenz!(du, u, p, t)
-    σ, ρ, β = p
-    du[1] = σ * (u[2] - u[1])
+    sigma, ρ, β = p
+    du[1] = sigma * (u[2] - u[1])
     du[2] = u[1] * (ρ - u[3]) - u[2]
     du[3] = u[1] * u[2] - β * u[3]
 end
 
-σ = 10.0
+sigma = 10.0
 ρ = 28.0
 β = 8 / 3
-p_ = [σ, ρ, β]
+p_ = [sigma, ρ, β]
 
 u0 = [1.0, 0.0, 0.0]
 tspan = (0.0, 8.0)
@@ -35,10 +36,10 @@ x̄ = mean(X, dims=2)
 noise_magnitude = 5e-3
 Xₙ = X
 
-shallow = false
+shallow = true
 
 # Define the neural network
-U = Lux.Chain(Lux.Dense(3, 50, sigmoid), Lux.Dense(50,100, sigmoid), Lux.Dense(100, 3))
+U = Lux.Chain(Lux.Dense(3, 10, sigmoid), Lux.Dense(10, 20, sigmoid), Lux.Dense(20, 3))
 p, st = Lux.setup(rng, U)
 _st = st
 
@@ -99,16 +100,25 @@ p_trained = res2.minimizer
 
 
 epochs = 0:4999
-plot(title="Losses Over Epoch", xlabel="Epoch", ylabel="Loss", ylims=(-10, 100), xlims=(0, 5000))
+
+plot_size = (1200, 600)# Width x Height in pixels
+left_margin = 15px
+right_margin = 15px
+top_margin = 15px
+bottom_margin = 15px
+# Plot losses
+
+plot()
+plot(title="Losses Over Epoch", xlabel="Epoch", ylabel="Loss", ylims=(-10, 100), xlims=(0, 5000), size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 # Add the data series
-plot!(epochs, shallowLosses, lw=1, legend=false, seriestype=:line, label="Shallow Network", color=:red)  # Uncomment and provide data if needed
-plot!(epochs, deepLosses, lw=1, legend=false, seriestype=:line, label="Deep Network", color=:blue)
-plot!(legend=:topright, grid=true)
+plot!(epochs, shallowLosses, legend=false, seriestype=:line, linestyle=:dash, lw=2, label="Shallow Network", color=:red)  # Uncomment and provide data if needed
+plot!(epochs, deepLosses, legend=false, seriestype=:line, lw=2, label="Deep Network", color=:blue)
+plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 
 # Extend the timespan for prediction
-extended_tspan = (0.0, 20.0)
-extended_datasize = 20
+extended_tspan = (0.0, 15.0)
+extended_datasize = 15
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
 # Define the extended ODE problem with the trained parameters
@@ -135,16 +145,16 @@ extended_solution = Array(solve(extended_ode_prob, Vern7(), abstol=1e-12, reltol
 # Different colors for u1, u2, u3, with legends and axis titles
 
 # Plot u1
-plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast")
-plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, label="Predicted u1", color=:red)
+plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast")
+plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u1", color=:red)
 
 # Plot u2
-plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, label="True u2", color=:green)
-plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, label="Predicted u2", color=:green)
+plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u2", color=:green)
+plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u2", color=:green)
 
 # Plot u3
-plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, label="True u3", color=:blue)
-plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, label="Predicted u3", color=:blue)
+plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u3", color=:blue)
+plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u3", color=:blue)
 
 # Add legend and grid
 plot!(legend=:topleft, grid=true)
