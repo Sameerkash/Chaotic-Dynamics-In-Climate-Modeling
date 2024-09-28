@@ -14,8 +14,8 @@ p0 = Float64[
 ]
 
 # Range for training Data
-tspan = (0.0, 10)
-datasize = 10
+tspan = (0.0, 30)
+datasize = 30
 t = range(tspan[1], tspan[2], length=datasize)
 
 
@@ -34,8 +34,8 @@ ode_data = Array(solve(prob, Tsit5(), u0=u0, p=p0, saveat=t))
 # Definition of Neural Network with activation function and layers.
 activation = sigmoid
 dudt2 = Lux.Chain(
-    Lux.Dense(3, 100, activation),
-    Lux.Dense(100, 3))
+    Lux.Dense(3, 25, activation),
+    Lux.Dense(25, 3))
 p, st = Lux.setup(rng, dudt2)
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat=t)
 
@@ -156,7 +156,9 @@ plot(t, losses, title="Losses Over Time", xlabel="Time", ylabel="Loss", lw=3, le
 # # Add legend and grid
 # plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
-plot()
+plot(xtickfont=font("Times New Roman", 16),
+ytickfont=font("Times New Roman", 16),
+guidefont=font("Times New Roman", 18))
 plot!(t, ode_data[1, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural ODE Forecast", size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 plot!(t, data_pred[1, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u1", color=:red)
 
@@ -172,8 +174,8 @@ plot!(t, data_pred[3, :], seriestype=:line, lw=2, markersize=5.0, label="Predict
 plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 # Extend the timespan for prediction
-extended_tspan = (t[end], 15.0)  # Start from the end of t
-extended_datasize = 10
+extended_tspan = (t[end], 100.0)  # Start from the end of t
+extended_datasize = 30
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
 # Define the extended ODE problem with the trained parameters

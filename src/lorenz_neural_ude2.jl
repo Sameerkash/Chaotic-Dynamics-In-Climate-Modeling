@@ -117,8 +117,8 @@ plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 
 # Extend the timespan for prediction
-extended_tspan = (0.0, 15.0)
-extended_datasize = 15
+extended_tspan = (0.0, 8.0)
+extended_datasize = 8
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
 # Define the extended ODE problem with the trained parameters
@@ -145,15 +145,18 @@ extended_solution = Array(solve(extended_ode_prob, Vern7(), abstol=1e-12, reltol
 # Different colors for u1, u2, u3, with legends and axis titles
 
 # Plot u1
-plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast")
+plot(xtickfont=font("Times New Roman", 16),
+ytickfont=font("Times New Roman", 16),
+guidefont=font("Times New Roman", 18))
+plot(extended_tsteps, extended_solution[1, :], seriestype=:scatter, marker=:circle, markerSize=11.0, label="True u1", color=:red, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast")
 plot!(extended_tsteps, extended_prediction[1, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u1", color=:red)
 
 # Plot u2
-plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u2", color=:green)
+plot!(extended_tsteps, extended_solution[2, :], seriestype=:scatter, marker=:circle, markerSize=11.0, label="True u2", color=:green)
 plot!(extended_tsteps, extended_prediction[2, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u2", color=:green)
 
 # Plot u3
-plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, markerSize=10.0, label="True u3", color=:blue)
+plot!(extended_tsteps, extended_solution[3, :], seriestype=:scatter, marker=:circle, markerSize=11.0, label="True u3", color=:blue)
 plot!(extended_tsteps, extended_prediction[3, :], seriestype=:line, linestyle=:dash, lw=2, label="Predicted u3", color=:blue)
 
 # Add legend and grid

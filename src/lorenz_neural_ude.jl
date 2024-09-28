@@ -88,9 +88,9 @@ println("Final training loss after $(length(losses)) iterations: $(losses[end])"
 
 p_trained = res2.minimizer
 
-data_pred = predict_neuralode(res2.u)
+data_pred = predict(res2.u)
 # Extend the timespan for prediction
-extended_tspan = (t[end], 12.0)
+extended_tspan = (t[end], 15.0)
 extended_datasize = 12
 extended_tsteps = range(extended_tspan[1], extended_tspan[2], length=extended_datasize)
 
@@ -123,7 +123,9 @@ extended_ode_prob = ODEProblem(lorenz!, u0, extended_tspan, p_)
 # Solve the true Lorenz system over the extended timespan
 extended_solution = Array(solve(extended_ode_prob, Vern7(), abstol=1e-12, reltol=1e-12, saveat=extended_tsteps))
 
-plot()
+plot(xtickfont=font("Times New Roman", 16),
+ytickfont=font("Times New Roman", 16),
+guidefont=font("Times New Roman", 18))
 plot!(t, ode_data[1, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u1", color=:red, alpha=0.3, xlabel="Time", ylabel="u", title="Lorenz System: Neural UDE Forecast", size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 plot!(t, data_pred[1, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u1", color=:red)
 
@@ -134,6 +136,7 @@ plot!(t, data_pred[2, :], seriestype=:line, lw=2, markersize=5.0, label="Predict
 # Plot u3 - original data
 plot!(t, ode_data[3, :], seriestype=:scatter, marker=:circle, markersize=10.0, label="True u3", color=:blue, alpha=0.3)
 plot!(t, data_pred[3, :], seriestype=:line, lw=2, markersize=5.0, label="Predicted u3", color=:blue)
+plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 
 combined_pred_u1 = vcat(data_pred[1, :], extended_prediction[1, 2:end])
@@ -152,7 +155,7 @@ plot!(extended_tsteps, extended_solution[2, :], lw=2, marker=:diamond, markersiz
 plot!(extended_tsteps, extended_solution[3, :], lw=2, marker=:diamond, markersize=8.0, seriestype=:scatter, label=" True u3 (Extended)", color=:blue)
 
 # Add legend and grid for the combined plot
-plot!(legend=:outertopright, grid=true, legendfontsize=10)
+plot!(legend=:outertopright, grid=true, legendfontsize=14)
 
 
 # Calculate the actual terms from the Lorenz dynamics

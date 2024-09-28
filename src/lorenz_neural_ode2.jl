@@ -3,7 +3,7 @@ using ComponentArrays, Lux, DiffEqFlux, OrdinaryDiffEq, Optimization, Optimizati
 rng = Random.default_rng()
 
 using Plots.PlotMeasures
-gr()
+gr() 
 # Intial Conditions u0 and constants p0
 const S0 = 1.0
 u0 = [S0 * 1, 0.0, 0.0]
@@ -12,7 +12,7 @@ p0 = Float64[
     28, # τIR
     8/3 # τID
 ]
-
+ 
 # Range for training Data
 tspan = (0.0, 10)
 datasize = 10
@@ -32,7 +32,7 @@ prob = ODEProblem(Chaos!, u0, tspan, p0)
 ode_data = Array(solve(prob, Tsit5(), u0=u0, p=p0, saveat=t))
 
 # Definition of Neural Network with activation function and layers.
-activation = relu
+activation = sigmoid
 dudt2 = Lux.Chain(
     Lux.Dense(3, 25, activation),
     Lux.Dense(25, 25, activation),
@@ -115,7 +115,10 @@ right_margin = 15px
 top_margin = 15px
 bottom_margin = 15px
 
-plot()
+
+plot(xtickfont=font("Times New Roman", 16),
+ytickfont=font("Times New Roman", 16),
+guidefont=font("Times New Roman", 18))
 
 plot(title="Losses Over Time", xlabel="Time", ylabel="Loss", ylims=(0, 8000), xlims=(0, 10), size=plot_size, left_margin=left_margin, right_margin=right_margin, bottom_margin=bottom_margin, top_margin=top_margin)
 # Add the data series
